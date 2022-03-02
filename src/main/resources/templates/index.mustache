@@ -1,0 +1,39 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<title>kufinder</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+<body>
+
+<h1>건국대학교 수강신청 도우미 kufinder</h1>
+<div class="col-md-12">
+	<table class="table table-horizontal table-bordered">
+		<thead class="thead-strong">
+		<tr>
+			<th>과목코드</th>
+			<th>교과목명</th>
+			<th>교수</th>
+			<th>정원</th>
+		</tr>
+		</thead>
+		<tbody id="tbody">
+		{{#lectureList}}
+			<tr>
+				<td>{{id}}</td>
+				<td>{{title}}</td>
+				<td>{{professor}}</td>
+				<td>{{currentCount}} / {{limitCount}}</td>
+			</tr>
+		{{/lectureList}}
+		</tbody>
+	</table>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+</body>
+</html>
