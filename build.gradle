@@ -32,4 +32,6 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
 
     implementation('com.h2database:h2')
+
+    implementation 'org.jsoup:jsoup:1.14.3'
 }
