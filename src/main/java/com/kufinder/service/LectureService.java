@@ -25,17 +25,21 @@ public class LectureService {
 
     @PostConstruct
     public void init() throws IOException {
-        String url = "https://kupis.konkuk.ac.kr/sugang/acd/cour/time/SeoulTimetableInfo.jsp?ltYy=2022&ltShtm=B01011&sbjtId=&pobtDiv=B04054";
-        Elements rows = Jsoup.connect(url).get().getElementsByTag("tbody").get(0).select("tr");
+        String listUrl = "https://kupis.konkuk.ac.kr/sugang/acd/cour/time/SeoulTimetableInfo.jsp?ltYy=2022&ltShtm=B01011&sbjtId=&pobtDiv=B04054";
+        String countUrl = "https://kupis.konkuk.ac.kr/sugang/acd/cour/aply/CourInwonInqTime.jsp?ltYy=2022&ltShtm=B01011&sbjtId=";
+
+        Elements rows = Jsoup.connect(listUrl).get().select("tbody").get(0).select("tr");
 
         for (Element row : rows) {
-            Elements cells = row.getElementsByTag("td");
+            Elements infoCells = row.getElementsByTag("td");
+            Elements countCells = Jsoup.connect(countUrl + infoCells.get(3).text()).get().select("td");
+
             lectureRepository.save(Lecture.builder()
-                .id(Integer.valueOf(cells.get(3).text()))
-                .title(cells.get(4).text())
-                .professor(cells.get(9).text())
-                .currentCount(0)
-                .limitCount(0)
+                .id(Integer.valueOf(infoCells.get(3).text()))
+                .title(infoCells.get(4).text())
+                .professor(infoCells.get(9).text())
+                .currentCount(Integer.valueOf(countCells.get(3).text()))
+                .limitCount(Integer.valueOf(countCells.get(5).text()))
                 .build()
             );
         }
