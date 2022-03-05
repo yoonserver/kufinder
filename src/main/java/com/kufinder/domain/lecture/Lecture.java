@@ -27,4 +27,9 @@ public class Lecture {
         this.currentCount = currentCount;
         this.limitCount = limitCount;
     }
+
+    public void update(Integer currentCount, Integer limitCount) {
+        this.currentCount = currentCount;
+        this.limitCount = limitCount;
+    }
 }
