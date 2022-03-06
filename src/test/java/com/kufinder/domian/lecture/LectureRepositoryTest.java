@@ -26,15 +26,13 @@ public class LectureRepositoryTest {
         Integer id = 1000;
         String title = "title";
         String professor = "professor";
-        Integer currentCount = 5;
-        Integer limitCount = 10;
 
         lectureRepository.save(Lecture.builder()
             .id(id)
             .title(title)
             .professor(professor)
-            .currentCount(currentCount)
-            .limitCount(limitCount).build());
+            .build()
+        );
 
         //when
         List<Lecture> lectureList = lectureRepository.findAll();
@@ -44,7 +42,5 @@ public class LectureRepositoryTest {
         assertThat(lecture.getId()).isEqualTo(id);
         assertThat(lecture.getTitle()).isEqualTo(title);
         assertThat(lecture.getProfessor()).isEqualTo(professor);
-        assertThat(lecture.getCurrentCount()).isEqualTo(currentCount);
-        assertThat(lecture.getLimitCount()).isEqualTo(limitCount);
     }
 }

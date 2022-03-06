@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -31,7 +32,7 @@ public class LectureService {
 
     @PostConstruct
     public void init() throws IOException {
-        String url = "https://kupis.konkuk.ac.kr/sugang/acd/cour/time/SeoulTimetableInfo.jsp?ltYy=2022&ltShtm=B01011&sbjtId=&pobtDiv=B04054";
+        String url = "https://kupis.konkuk.ac.kr/sugang/acd/cour/time/SeoulTimetableInfo.jsp?ltYy=2022&ltShtm=B01011&pobtDiv=B04054";
         Elements rows = Jsoup.connect(url).get().select("tbody").get(0).select("tr");
 
         for (Element row : rows) {
@@ -41,8 +42,6 @@ public class LectureService {
                 .id(Integer.valueOf(infoCells.get(3).text()))
                 .title(infoCells.get(4).text())
                 .professor(infoCells.get(9).text())
-                .currentCount(0)
-                .limitCount(0)
                 .build()
             );
         }
@@ -58,20 +57,43 @@ public class LectureService {
     @Scheduled(fixedDelay = 60000)
     @Transactional
     public void updateCount() {
-        HttpClient client = HttpClient.newHttpClient();
+        String firstGradeUrl = "https://kupis.konkuk.ac.kr/sugang/acd/cour/aply/CourBasketInwonInq.jsp?ltYy=2022&ltShtm=B01011&promShyr=1&fg=B&sbjtId=";
+        String secondGradeUrl = "https://kupis.konkuk.ac.kr/sugang/acd/cour/aply/CourBasketInwonInq.jsp?ltYy=2022&ltShtm=B01011&promShyr=2&fg=B&sbjtId=";
+        String thirdGradeUrl = "https://kupis.konkuk.ac.kr/sugang/acd/cour/aply/CourBasketInwonInq.jsp?ltYy=2022&ltShtm=B01011&promShyr=3&fg=B&sbjtId=";
+        String fourthGradeUrl = "https://kupis.konkuk.ac.kr/sugang/acd/cour/aply/CourBasketInwonInq.jsp?ltYy=2022&ltShtm=B01011&promShyr=4&fg=B&sbjtId=";
+        String allGradeUrl = "https://kupis.konkuk.ac.kr/sugang/acd/cour/aply/CourInwonInqTime.jsp?ltYy=2022&ltShtm=B01011&sbjtId=";
 
-        List<CompletableFuture<Void>> resultList = lectureRepository.findAll().stream()
-            .map(lecture -> {
-                HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://kupis.konkuk.ac.kr/sugang/acd/cour/aply/CourInwonInqTime.jsp?ltYy=2022&ltShtm=B01011&sbjtId=" + lecture.getId()))
-                    .build();
-                return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenAccept(response -> {
-                        Elements countCells = Jsoup.parse(response.body()).select("td");
-                        lecture.update(Integer.valueOf(countCells.get(3).text()), Integer.valueOf(countCells.get(5).text()));
-                    });
-            })
-            .collect(Collectors.toList());
+        List<Lecture> lectureList = lectureRepository.findAll();
+        List<CompletableFuture<Void>> resultList = new ArrayList<>();
+
+        for (Lecture lecture : lectureList) {
+            HttpClient client = HttpClient.newHttpClient();
+            resultList.add(client.sendAsync(HttpRequest.newBuilder().uri(URI.create(firstGradeUrl + lecture.getId())).build(), HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    String firstGradeCount[] = Jsoup.parse(response.body()).select("td").get(1).text().split("/");
+                    lecture.updateFirstGradeCount(Integer.valueOf(firstGradeCount[0].trim()), Integer.valueOf(firstGradeCount[1].trim()));
+                }));
+            resultList.add(client.sendAsync(HttpRequest.newBuilder().uri(URI.create(secondGradeUrl + lecture.getId())).build(), HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    String secondGradeCount[] = Jsoup.parse(response.body()).select("td").get(1).text().split("/");
+                    lecture.updateSecondGradeCount(Integer.valueOf(secondGradeCount[0].trim()), Integer.valueOf(secondGradeCount[1].trim()));
+                }));
+            resultList.add(client.sendAsync(HttpRequest.newBuilder().uri(URI.create(thirdGradeUrl + lecture.getId())).build(), HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    String thirdGradeCount[] = Jsoup.parse(response.body()).select("td").get(1).text().split("/");
+                    lecture.updateThirdGradeCount(Integer.valueOf(thirdGradeCount[0].trim()), Integer.valueOf(thirdGradeCount[1].trim()));
+                }));
+            resultList.add(client.sendAsync(HttpRequest.newBuilder().uri(URI.create(fourthGradeUrl + lecture.getId())).build(), HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    String fourthGradeCount[] = Jsoup.parse(response.body()).select("td").get(1).text().split("/");
+                    lecture.updateFourthGradeCount(Integer.valueOf(fourthGradeCount[0].trim()), Integer.valueOf(fourthGradeCount[1].trim()));
+                }));
+            resultList.add(client.sendAsync(HttpRequest.newBuilder().uri(URI.create(allGradeUrl + lecture.getId())).build(), HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    Elements allGradeCount = Jsoup.parse(response.body()).select("td");
+                    lecture.updateAllGradeCount(Integer.valueOf(allGradeCount.get(3).text()), Integer.valueOf(allGradeCount.get(5).text()));
+                }));
+        }
 
         resultList.forEach(CompletableFuture::join);
     }
