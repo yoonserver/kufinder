@@ -54,8 +54,7 @@ public class LectureService {
             .collect(Collectors.toList());
     }
 
-    @Scheduled(fixedDelay = 60000)
-    @Transactional
+    @Scheduled(cron = "0 0/5 * * * *")
     public void updateCount() {
         String firstGradeUrl = "https://kupis.konkuk.ac.kr/sugang/acd/cour/aply/CourBasketInwonInq.jsp?ltYy=2022&ltShtm=B01011&promShyr=1&fg=B&sbjtId=";
         String secondGradeUrl = "https://kupis.konkuk.ac.kr/sugang/acd/cour/aply/CourBasketInwonInq.jsp?ltYy=2022&ltShtm=B01011&promShyr=2&fg=B&sbjtId=";
@@ -63,11 +62,12 @@ public class LectureService {
         String fourthGradeUrl = "https://kupis.konkuk.ac.kr/sugang/acd/cour/aply/CourBasketInwonInq.jsp?ltYy=2022&ltShtm=B01011&promShyr=4&fg=B&sbjtId=";
         String allGradeUrl = "https://kupis.konkuk.ac.kr/sugang/acd/cour/aply/CourInwonInqTime.jsp?ltYy=2022&ltShtm=B01011&sbjtId=";
 
+        HttpClient client = HttpClient.newHttpClient();
         List<Lecture> lectureList = lectureRepository.findAll();
-        List<CompletableFuture<Void>> resultList = new ArrayList<>();
 
         for (Lecture lecture : lectureList) {
-            HttpClient client = HttpClient.newHttpClient();
+            List<CompletableFuture<Void>> resultList = new ArrayList<>();
+
             resultList.add(client.sendAsync(HttpRequest.newBuilder().uri(URI.create(firstGradeUrl + lecture.getId())).build(), HttpResponse.BodyHandlers.ofString())
                 .thenAccept(response -> {
                     String firstGradeCount[] = Jsoup.parse(response.body()).select("td").get(1).text().split("/");
@@ -93,8 +93,9 @@ public class LectureService {
                     Elements allGradeCount = Jsoup.parse(response.body()).select("td");
                     lecture.updateAllGradeCount(Integer.valueOf(allGradeCount.get(3).text()), Integer.valueOf(allGradeCount.get(5).text()));
                 }));
-        }
 
-        resultList.forEach(CompletableFuture::join);
+            resultList.forEach(CompletableFuture::join);
+            lectureRepository.save(lecture);
+        }
     }
 }
